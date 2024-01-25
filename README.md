@@ -4,7 +4,7 @@
 ## Environment Setup
 After installing conda, run:
 
-```conda env create -n starchaser --file environment.yml```
+```conda env create -n starchaser --file windows-environment.yml```
 
 If you install new packages, remember to update the conda environment file:
 
