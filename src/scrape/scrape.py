@@ -3,9 +3,10 @@ import logging
 import numpy as np
 import pandas as pd
 import re
-import scrape.block_network
+import warnings
 
-from bs4 import BeautifulSoup as bs
+from bs4 import BeautifulSoup as bs, MarkupResemblesLocatorWarning
+from io import StringIO
 from urllib.parse import urljoin, urlsplit, urlunsplit
 from requests import Session
 from requests_cache import CacheMixin
@@ -13,7 +14,12 @@ from requests_ratelimiter import LimiterMixin
 
 from scrape.poll import get_poll_grade
 
+# import scrape.block_network  # Uncomment to test caching
+# from line_profiler_pycharm import profile  # Uncomment to use profiling
+
+
 logger = logging.getLogger(__name__)
+warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 
 class CachedLimiterSession(CacheMixin, LimiterMixin, Session):
@@ -34,12 +40,11 @@ def get_base_url(url):
 
 def scrape_guidebook(guidebook_url: str):
     logger.info(f'Scraping guidebook {guidebook_url}')
-    crag_list = get_crags_in_guidebook(guidebook_url)
-    crag_list = crag_list[0:1]
+    crag_list = scrape_crags_from_guidebook(guidebook_url)
 
     for n_crag, crag in enumerate(crag_list, start=1):
         logger.info(f'Scraping crag {n_crag}/{len(crag_list)} {crag["url"]}')
-        crag_data = get_crag_data(crag['url'])
+        crag_data = scrape_crag_data(crag['url'])
         crag.update(crag_data)
 
     total_climbs = sum(len(crag['climbs']) for crag in crag_list)
@@ -53,7 +58,7 @@ def scrape_guidebook(guidebook_url: str):
             logger.info(f'{total_done*100/total_climbs:.1f}% - Scraping climb {n_climb}/{len(crag["climbs"])}, '
                         f'crag {n_crag}/{len(crag_list)} {climb_url}')
 
-            if poll_data := get_grade_poll_data(climb_url):
+            if poll_data := scrape_grade_poll_data(climb_url):
                 grade_dict = crag['grade_list'][str(climb['gradetype'])]
                 guidebook_grade_score = grade_dict[str(climb['grade'])]['score']
                 poll_grade_text, poll_grade_code, score_modifier = get_poll_grade(poll_data)
@@ -89,15 +94,18 @@ def write_climbs_csv(crag_list, out_path):
             c['poll_diff'] = climb['poll_diff']
 
             c['url'] = climb['url']
-            c['desc'] = bs(climb['desc'], 'html.parser').get_text().replace('Description', 'Description: ')
+            c['desc'] = (bs(climb['desc'], 'html.parser').get_text()
+                         .removeprefix('Rockfax Description')
+                         .removeprefix('UKClimbing Description'))
+            c['symbols'] = ', '.join([crag['climb_symbols'][str(s)]['name'] for s in climb['symbols']
+                                      if str(s) in crag['climb_symbols']])
 
             buttress_meta = crag['buttress_data'][str(climb['buttress_id'])]['meta']
             if buttress_meta and 'approach_time' in buttress_meta:
                 c['approach_time'] = crag['buttress_data'][str(climb['buttress_id'])]['meta']['approach_time']
             else:
                 c['approach_time'] = 0
-            c['symbols'] = ', '.join([crag['climb_symbols'][str(s)]['name'] for s in climb['symbols']
-                                      if str(s) in crag['climb_symbols']])
+
             c['rocktype'] = crag['rocktype']
             c['aspect'] = crag['aspect']
 
@@ -108,12 +116,12 @@ def write_climbs_csv(crag_list, out_path):
     logging.info(f'CSV written to {out_path}')
 
 
-def get_crags_in_guidebook(guidebook_url: str):
+def scrape_crags_from_guidebook(guidebook_url: str):
     """Return a list of crags"""
     response = session.get(guidebook_url)
     base_url = get_base_url(guidebook_url)
 
-    df_scraped_tables = pd.read_html(response.text, extract_links='all')
+    df_scraped_tables = pd.read_html(StringIO(response.text), extract_links='all')
     df_crags = pd.DataFrame(np.vstack(df_scraped_tables), columns=df_scraped_tables[0].columns)
     df_crags.columns = ['crag', 'nclimbs', 'rocktype', 'aspect']
 
@@ -132,7 +140,7 @@ def get_crags_in_guidebook(guidebook_url: str):
     return crag_list
 
 
-def get_crag_data(crag_url: str):
+def scrape_crag_data(crag_url: str):
     """Scrape data for a crag from javascript variables in <script> section"""
 
     response = session.get(crag_url)
@@ -161,7 +169,7 @@ def get_crag_data(crag_url: str):
     return crag
 
 
-def get_grade_poll_data(climb_url: str):
+def scrape_grade_poll_data(climb_url: str):
     response = session.get(climb_url)
 
     # Get grade poll vote count - we assume that find_all preserves order

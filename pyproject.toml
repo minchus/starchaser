@@ -48,6 +48,7 @@ dependencies = [
   "beautifulsoup4",
   "click",
   "lxml",
+  "line_profiler_pycharm",
   "requests",
   "requests_cache",
   "requests_ratelimiter",

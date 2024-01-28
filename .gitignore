@@ -1,4 +1,5 @@
 data
+*.pclprof
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
