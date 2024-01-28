@@ -14,7 +14,7 @@ from requests import Session
 from requests_cache import CacheMixin
 from requests_ratelimiter import LimiterMixin
 
-from scrape.poll import get_poll_grade
+from scrape.grade_poll import get_poll_grade
 
 # import scrape.block_network  # Uncomment to test caching
 # from line_profiler_pycharm import profile  # Uncomment to use profiling

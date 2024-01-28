@@ -8,6 +8,7 @@ Prerequisites:
 
 ## Run scrape
 ```hatch run scrape```
+
 By default data directory for the request cache and output CSV is `./data/`
 which will be created if it does not exist.
 

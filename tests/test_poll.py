@@ -1,4 +1,4 @@
-from scrape.poll import get_poll_grade
+from scrape.grade_poll import get_poll_grade
 from math import isclose
 
 
