@@ -2,10 +2,14 @@
  Reach for the stars
 
 ## Environment Setup
-After installing conda, run:
+Prerequisites:
+ - system python > 3.8
+ - hatch
 
-```conda env create -n starchaser --file windows-environment.yml```
+## Run scrape
+```hatch run scrape```
+By default data directory for the request cache and output CSV is `./data/`
+which will be created if it does not exist.
 
-If you install new packages, remember to update the conda environment file:
-
-```conda env export > environment.yml```
+## Run tests
+```hatch run test```

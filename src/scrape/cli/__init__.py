@@ -4,8 +4,9 @@
 import click
 import logging
 
+
 from starchaser.__about__ import __version__
-from scrape.scrape import scrape_guidebook, write_climbs_csv
+from scrape.scrape import Scraper
 
 
 logger = logging.getLogger()
@@ -18,7 +19,8 @@ logger.setLevel(logging.INFO)
 @click.group(context_settings={"help_option_names": ["-h", "--help"]}, invoke_without_command=True)
 @click.version_option(version=__version__, prog_name="Starchaser Scraper")
 def do_scrape():
+    s = Scraper()
     guidebook_url = 'https://www.ukclimbing.com/logbook/books/dorset-2348/'
-    crag_list = scrape_guidebook(guidebook_url)
-    write_climbs_csv(crag_list, out_path='./data/climbs.csv')
+    crag_data = s.scrape_guidebook_and_contents(guidebook_url)
+    s.write_climbs_csv(crag_data)
 
