@@ -61,7 +61,7 @@ with st.sidebar:
     if df_logs is not None:
         df_matched = df_filtered.loc[df['name'].isin(df_logs['Name'])]
         n_matched = len(df_matched.index)
-        exclude_logs = st.checkbox(f'Exclude climbs in logbook', value=False)
+        exclude_logs = st.checkbox(f'Exclude climbs in logbook', value=True)
         if exclude_logs:
             st.markdown(f'{n_matched} climbs in {f.name} matched and were excluded')
             df_filtered = df_filtered.loc[~df['name'].isin(df_logs['Name'])]

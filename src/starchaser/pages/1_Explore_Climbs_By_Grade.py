@@ -37,7 +37,7 @@ grade_list = sorted(df['grade'].unique().tolist())
 
 
 with st.sidebar:
-    exclude_climbs = st.checkbox('Exclude climbs in logbook')
+    exclude_climbs = st.checkbox('Exclude climbs in logbook', value=True)
     df_logs, f = get_logbook_data()
     if exclude_climbs and df_logs is not None:
         df_matched = df.loc[df['name'].isin(df_logs['Name'])]
