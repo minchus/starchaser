@@ -1,0 +1,6 @@
+altair
+lxml
+numpy
+pandas
+st-gsheets-connection
+streamlit
