@@ -173,6 +173,7 @@ class Scraper:
 
                 c = dict()
                 c['name'] = climb['name']
+                c['url'] = climb['url']
                 # Convert grade to text e.g. 36 (int) => 6a (str)
                 c['grade'] = crag['grade_list'][str(climb['gradetype'])][str(climb['grade'])]['name']
                 c['stars'] = climb['stars']
@@ -187,7 +188,6 @@ class Scraper:
                              .removeprefix('UKClimbing Description'))
                 c['symbols'] = ', '.join([crag['climb_symbols'][str(s)]['name'] for s in climb['symbols']
                                           if str(s) in crag['climb_symbols']])
-                c['url'] = climb['url']
 
                 buttress_meta = crag['buttress_data'][str(climb['buttress_id'])]['meta']
                 if buttress_meta and 'approach_time' in buttress_meta:

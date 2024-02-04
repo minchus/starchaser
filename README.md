@@ -20,7 +20,7 @@ spreadsheet = "https://docs.google.com/spreadsheets/d/xxxxxxx/edit#gid=0"
 ```
 Then run:
 
-```hatch run streamlit run ./src/starchaser/main.py```
+```hatch run streamlit run ./src/starchaser/Explore_Crags.py```
 
 ### Run scrape
 ```hatch run scrape```
