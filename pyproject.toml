@@ -25,9 +25,11 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
+  "altair",
   "numpy",
   "pandas",
-  "streamlit"
+  "streamlit",
+  "st-gsheets-connection"
 ]
 
 [project.urls]

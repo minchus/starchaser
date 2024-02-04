@@ -53,6 +53,11 @@ class Scraper:
             crag_data = self.scrape_crag(crag['url'])
             crag.update(crag_data)
 
+        # Sport climbing only
+        for crag in crag_list:
+            crag['climbs'] = list(filter(lambda x: x['gradetype'] == 3, crag['climbs']))
+
+        # crag_list = crag_list[0:1]  # Uncomment for testing (scrape only first crag)
         total_climbs = sum(len(crag['climbs']) for crag in crag_list)
         total_done = 0.0
 
@@ -165,24 +170,24 @@ class Scraper:
         list_of_climbs = list()
         for crag in crag_list:
             for climb in crag['climbs']:
+
                 c = dict()
-
-                c['crag'] = crag['name']
-                c['buttress'] = crag['buttress_data'][str(climb['buttress_id'])]['name']
-                c['stars'] = climb['stars']
-                c['logs'] = climb['logs']
-
+                c['name'] = climb['name']
                 # Convert grade to text e.g. 36 (int) => 6a (str)
                 c['grade'] = crag['grade_list'][str(climb['gradetype'])][str(climb['grade'])]['name']
-                c['poll_grade_text'] = climb['poll_grade_text']
+                c['stars'] = climb['stars']
+                c['logs'] = climb['logs']
+                c['poll_grade'] = climb['poll_grade_text']
                 c['poll_diff'] = climb['poll_diff']
+                c['crag'] = crag['name']
+                c['buttress'] = crag['buttress_data'][str(climb['buttress_id'])]['name']
 
-                c['url'] = climb['url']
                 c['desc'] = (bs(climb['desc'], 'lxml').get_text()
                              .removeprefix('Rockfax Description')
                              .removeprefix('UKClimbing Description'))
                 c['symbols'] = ', '.join([crag['climb_symbols'][str(s)]['name'] for s in climb['symbols']
                                           if str(s) in crag['climb_symbols']])
+                c['url'] = climb['url']
 
                 buttress_meta = crag['buttress_data'][str(climb['buttress_id'])]['meta']
                 if buttress_meta and 'approach_time' in buttress_meta:
@@ -197,7 +202,7 @@ class Scraper:
 
         df_climbs = pd.DataFrame(list_of_climbs)
         out_path = os.path.join(self.data_dir, out_file)
-        df_climbs.to_csv(out_path)
+        df_climbs.to_csv(out_path, index=False)
         logging.info(f'CSV written to {out_path}')
 
 
