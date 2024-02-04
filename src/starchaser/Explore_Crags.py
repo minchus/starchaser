@@ -1,5 +1,11 @@
 import altair as alt
 import streamlit as st
+import sys
+
+from pathlib import Path
+
+# Add src dir to python path so streamlit can find modules
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from starchaser.utils import get_climb_data, set_common_page_config, get_logbook_data
 
