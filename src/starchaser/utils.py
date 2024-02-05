@@ -18,7 +18,7 @@ class GuidebookInfo:
 
     @staticmethod
     def get_area_names():
-        return GuidebookInfo.data.keys()
+        return list(GuidebookInfo.data.keys())
 
     @staticmethod
     def get_url(area_name):

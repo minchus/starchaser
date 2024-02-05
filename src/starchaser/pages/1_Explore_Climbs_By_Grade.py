@@ -34,10 +34,16 @@ def poll_grade_sort_key(x):
 with st.sidebar:
     logbook_file = st.file_uploader('Upload UKC logbook (DLOG format)')
 
+    default_index = 0
+    if 'area' in st.session_state:
+        area_names = GuidebookInfo.get_area_names()
+        default_index = area_names.index(st.session_state.area)
+
     area = st.selectbox(
         'Select area',
         options=GuidebookInfo.get_area_names(),
-        format_func=GuidebookInfo.to_display_name
+        format_func=GuidebookInfo.to_display_name,
+        index=default_index
     )
 
 df = get_climb_data(area)
