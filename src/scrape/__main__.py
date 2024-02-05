@@ -4,6 +4,6 @@
 import sys
 
 if __name__ == "__main__":
-    from scrape.cli import do_scrape
+    from scrape.cli import main
 
-    sys.exit(do_scrape())
+    sys.exit(main())

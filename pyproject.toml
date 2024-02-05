@@ -38,7 +38,7 @@ Issues = "https://github.com/unknown/starchaser/issues"
 Source = "https://github.com/unknown/starchaser"
 
 [project.scripts]
-scrape = "scrape.cli:do_scrape"
+scrape = "scrape.cli:main"
 
 [tool.hatch.version]
 path = "src/starchaser/__about__.py"

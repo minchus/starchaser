@@ -7,24 +7,27 @@ from pathlib import Path
 # Add src dir to python path so streamlit can find modules
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from starchaser.utils import get_climb_data, set_common_page_config, get_logbook_data
+from starchaser.utils import get_climb_data, set_common_page_config, get_logbook_data, GuidebookInfo
+
 
 set_common_page_config()
 st.markdown("# Explore Crags")
 
-df = get_climb_data()
-df_filtered = df
+with st.sidebar:
+    logbook_file = st.file_uploader('Upload UKC logbook (DLOG format)')
+
+    area = st.selectbox(
+        'Select area',
+        options=GuidebookInfo.get_area_names(),
+        format_func=GuidebookInfo.to_display_name
+    )
+
+df = get_climb_data(area)
+total_climbs = len(df.index)
 crag_list = sorted(df['crag'].unique().tolist())
 grade_list = sorted(df['grade'].unique().tolist())
 
 with st.sidebar:
-    logbook_file = st.file_uploader('Upload UKC logbook (DLOG format)')
-
-    guidebook = st.selectbox(
-        'Select area',
-        ['Portland']
-    )
-
     selected_crags = st.multiselect(
         'Select crags',
         options=crag_list
@@ -48,7 +51,7 @@ with st.sidebar:
     if st.checkbox('⭐⭐⭐', value=True):
         selected_stars.append(3)
 
-df_filtered = df_filtered.loc[
+df = df.loc[
     (df['crag'].isin(selected_crags)) &
     (df['grade'] >= min_grade) &
     (df['grade'] <= max_grade) &
@@ -58,16 +61,20 @@ df_filtered = df_filtered.loc[
 exclude_logs = False
 with st.sidebar:
     df_logs, f = get_logbook_data(logbook_file)
-    if df_logs is not None:
-        df_matched = df_filtered.loc[df['name'].isin(df_logs['Name'])]
-        n_matched = len(df_matched.index)
+    if df_logs is None:
+        st.markdown('No logbook uploaded')
+    else:
         exclude_logs = st.checkbox(f'Exclude climbs in logbook', value=True)
+        df_matched = df.loc[df['name'].isin(df_logs['Name'])]
+        n_matched = len(df_matched.index)
+
         if exclude_logs:
             st.markdown(f'{n_matched} climbs in {f.name} matched and were excluded')
-            df_filtered = df_filtered.loc[~df['name'].isin(df_logs['Name'])]
+            df = df.loc[~df['name'].isin(df_logs['Name'])]
+        else:
+            st.markdown(f'{n_matched} climbs in {f.name} matched')
 
-    n_climbs = len(df_filtered.index)
-    total_climbs = len(df.index)
+    n_climbs = len(df.index)
     if n_climbs:
         st.markdown(f'### {n_climbs} / {total_climbs} climbs selected')
     else:
@@ -94,7 +101,7 @@ The bars get smaller from left to right.
 ''')
 
 c = alt.Chart(
-    df_filtered,
+    df,
     title=alt.Title(
         "Number of climbs at each grade by crag",
     )
@@ -122,7 +129,7 @@ A poll_diff of 1 means that the guidebook grade is 1 grade higher than the poll 
 
 :mag: Click the magnifier in the top right to search.
 ''')
-st.dataframe(df_filtered.style.format('link', subset='url'), column_config={'url': st.column_config.LinkColumn()})
+st.dataframe(df.style.format('link', subset='url'), column_config={'url': st.column_config.LinkColumn()})
 
 if exclude_logs:
     st.markdown('#### Climbs in logbook that were excluded')

@@ -1,7 +1,7 @@
 import altair as alt
 import streamlit as st
 
-from starchaser.utils import get_climb_data, set_common_page_config, get_logbook_data
+from starchaser.utils import get_climb_data, set_common_page_config, get_logbook_data, GuidebookInfo
 
 
 set_common_page_config()
@@ -18,7 +18,7 @@ If you uploaded a logbook file on the "Explore Crags" page, those climbs can be 
 
 
 def poll_grade_sort_key(x):
-    if x == "No votes":
+    if not x[0].isdigit():  # e.g. "No votes" or "project" or "?"
         return "0", "0"
 
     # Low 6a, Mid 6a, High 6a => 6a0, 6a1, 6a2
@@ -31,20 +31,33 @@ def poll_grade_sort_key(x):
     return x_grade, m[x_modifier]
 
 
-df = get_climb_data()
+with st.sidebar:
+    logbook_file = st.file_uploader('Upload UKC logbook (DLOG format)')
+
+    area = st.selectbox(
+        'Select area',
+        options=GuidebookInfo.get_area_names(),
+        format_func=GuidebookInfo.to_display_name
+    )
+
+df = get_climb_data(area)
 crag_list = sorted(df['crag'].unique().tolist())
 grade_list = sorted(df['grade'].unique().tolist())
 
-
 with st.sidebar:
-    exclude_climbs = st.checkbox('Exclude climbs in logbook', value=True)
-    df_logs, f = get_logbook_data()
-    if exclude_climbs and df_logs is not None:
+    df_logs, f = get_logbook_data(logbook_file)
+    if df_logs is None:
+        st.markdown('No logbook uploaded')
+    else:
+        exclude_logs = st.checkbox(f'Exclude climbs in logbook', value=True)
         df_matched = df.loc[df['name'].isin(df_logs['Name'])]
         n_matched = len(df_matched.index)
-        st.markdown(f'{n_matched} climbs in {f.name} matched and were excluded')
-        df = df.loc[~df['name'].isin(df_logs['Name'])]
 
+        if exclude_logs:
+            st.markdown(f'{n_matched} climbs in {f.name} matched and were excluded')
+            df = df.loc[~df['name'].isin(df_logs['Name'])]
+        else:
+            st.markdown(f'{n_matched} climbs in {f.name} matched')
 
 tabs = st.tabs(grade_list)  # Assume tabs returned in same order as grade_list
 for tab, tab_name in zip(tabs, grade_list):

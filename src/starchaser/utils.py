@@ -4,11 +4,37 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 
 
-def get_climb_data():
-    if 'df' not in st.session_state:
-        conn = st.connection("gsheets", type=GSheetsConnection)
+class GuidebookInfo:
+    data = {
+        'dorset': {
+            'url': 'https://www.ukclimbing.com/logbook/books/dorset-2348/',
+            'display_name': 'Dorset'
+        },
+        'el-chorro': {
+            'url': 'https://www.ukclimbing.com/logbook/books/el_chorro-526',
+            'display_name': 'El Chorro'
+        }
+    }
+
+    @staticmethod
+    def get_area_names():
+        return GuidebookInfo.data.keys()
+
+    @staticmethod
+    def get_url(area_name):
+        return GuidebookInfo.data[area_name]['url']
+
+    @staticmethod
+    def to_display_name(area_name):
+        return GuidebookInfo.data[area_name]['display_name']
+
+
+def get_climb_data(area):
+    if 'df' not in st.session_state or area != st.session_state.area:
+        conn = st.connection(area, type=GSheetsConnection)
         df = conn.read()
         st.session_state.df = df
+        st.session_state.area = area
     return st.session_state.df
 
 
