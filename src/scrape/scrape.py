@@ -21,7 +21,7 @@ from scrape.grade_poll import get_poll_grade
 
 
 logger = logging.getLogger(__name__)
-warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
+warnings.filterwarnings('ignore', category=MarkupResemblesLocatorWarning)
 
 
 class CachedLimiterSession(CacheMixin, LimiterMixin, Session):
@@ -34,7 +34,7 @@ def get_base_url(url):
 
 
 class Scraper:
-    def __init__(self, data_dir="data"):
+    def __init__(self, data_dir='data'):
         self.data_dir = data_dir
         Path(self.data_dir).mkdir(parents=True, exist_ok=True)
 
@@ -44,13 +44,20 @@ class Scraper:
             backend='filesystem'
         )
 
-    def scrape_guidebook_and_contents(self, guidebook_url: str) -> list[dict]:
+    def scrape_guidebook_and_contents(self, guidebook_url: str, refresh: bool = False) -> list[dict]:
+        """
+
+        :param guidebook_url:
+        :param refresh: Force refresh of the cache
+        :return: A list of dict, each dict is info for a crag
+        """
+
         logger.info(f'Scraping guidebook {guidebook_url}')
-        crag_list = self.scrape_guidebook(guidebook_url)
+        crag_list = self.scrape_guidebook(guidebook_url, refresh)
 
         for n_crag, crag in enumerate(crag_list, start=1):
             logger.info(f'Scraping crag {n_crag}/{len(crag_list)} {crag["url"]}')
-            crag_data = self.scrape_crag(crag['url'])
+            crag_data = self.scrape_crag(crag['url'], refresh)
             crag.update(crag_data)
 
         # Sport climbing only
@@ -69,28 +76,34 @@ class Scraper:
                 logger.info(f'{total_done * 100 / total_climbs:.1f}% - Scraping climb {n_climb}/{len(crag["climbs"])}, '
                             f'crag {n_crag}/{len(crag_list)} {climb_url}')
 
-                if poll_data := self.scrape_grade_poll(climb_url):
+                if poll_data := self.scrape_grade_poll(climb_url, refresh):
                     grade_dict = crag['grade_list'][str(climb['gradetype'])]
                     guidebook_grade_score = grade_dict[str(climb['grade'])]['score']
                     poll_grade_text, poll_grade_code, score_modifier = get_poll_grade(poll_data)
                     climb['poll_grade_text'] = poll_grade_text
 
                     if poll_grade_code in grade_dict:
-                        climb['poll_diff'] = guidebook_grade_score - (grade_dict[poll_grade_code]['score'] + score_modifier)
+                        climb['poll_diff'] = \
+                            guidebook_grade_score - (grade_dict[poll_grade_code]['score'] + score_modifier)
                     else:
                         climb['poll_diff'] = -0.01
                 else:
-                    climb['poll_grade_text'] = "Bad poll data"
+                    climb['poll_grade_text'] = 'Bad poll data'
                     climb['poll_diff'] = -0.01
 
         return crag_list
 
-    def scrape_guidebook(self, guidebook_url: str) -> list[dict]:
+    def scrape_guidebook(self, guidebook_url: str, refresh: bool) -> list[dict]:
         """Return a list of dict, where each dict is crag info"""
-        response = self.session.get(guidebook_url)
+        response = self.session.get(guidebook_url, refresh=refresh)
         base_url = get_base_url(guidebook_url)
 
         df_scraped_tables = pd.read_html(StringIO(response.text), extract_links='all')
+
+        # El-chorro guidebook has an initial table that we're not interested in
+        if 'chorro' in guidebook_url or 'kalymnos' in guidebook_url:
+            df_scraped_tables = df_scraped_tables[1:]
+
         df_crags = pd.DataFrame(np.vstack(df_scraped_tables), columns=df_scraped_tables[0].columns)
         df_crags.columns = ['crag', 'nclimbs', 'rocktype', 'aspect']
 
@@ -98,6 +111,14 @@ class Scraper:
         # Extract the elements of the tuple into separate columns
         df_crags['name'] = df_crags['crag'].apply(pd.Series)[0]
         df_crags['url'] = base_url + df_crags['crag'].apply(pd.Series)[1] + "/"
+
+        # The crag table may contain title rows that we are not interested in
+        n_crags_before = len(df_crags.index)
+        df_crags = df_crags.dropna()
+        n_rows_with_nan = abs(n_crags_before - len(df_crags.index))
+        if n_rows_with_nan:
+            logging.warning(f'{n_rows_with_nan} guidebook crag rows contained NaN and were dropped')
+
         df_crags['nclimbs'] = df_crags['nclimbs'].apply(pd.Series)[0].apply(int)
         df_crags['rocktype'] = df_crags['rocktype'].apply(pd.Series)[0]
         df_crags['aspect'] = df_crags['aspect'].apply(pd.Series)[0]
@@ -108,13 +129,13 @@ class Scraper:
         crag_list = df_crags.to_dict(orient='records')
         return crag_list
 
-    def scrape_crag(self, crag_url: str) -> dict:
+    def scrape_crag(self, crag_url: str, refresh: bool) -> dict:
         """
         Return a dict containing crag data
         The crag data is contained in javascript variables in <script> section
         """
 
-        response = self.session.get(crag_url)
+        response = self.session.get(crag_url, refresh=refresh)
         soup = bs(response.content, 'lxml')
         script = [x for x in soup.find_all('script') if 'cragId' in x.text][0]
 
@@ -139,8 +160,8 @@ class Scraper:
         crag['climbs'] = crag.pop('table_data')
         return crag
 
-    def scrape_grade_poll(self, climb_url: str):
-        response = self.session.get(climb_url)
+    def scrape_grade_poll(self, climb_url: str, refresh: bool) -> dict:
+        response = self.session.get(climb_url, refresh=refresh)
 
         # Get grade poll vote count - we assume that find_all preserves order
         poll_data = dict()
@@ -160,11 +181,12 @@ class Scraper:
         if len(poll_data) != len(grade_name_list):
             return None
 
+        # Return a dict { '37hard,High 6b+': 0, ... }
         ret = {f"{grade_code},{grade_name}": votes for (grade_code, votes), grade_name in
                zip(poll_data.items(), grade_name_list)}
         return ret
 
-    def write_climbs_csv(self, crag_list, out_file="climbs.csv"):
+    def write_climbs_csv(self, crag_list: list[dict], out_file: str) -> None:
         # Flatten data and extract fields of interest
 
         list_of_climbs = list()
@@ -181,7 +203,11 @@ class Scraper:
                 c['poll_grade'] = climb['poll_grade_text']
                 c['poll_diff'] = climb['poll_diff']
                 c['crag'] = crag['name']
-                c['buttress'] = crag['buttress_data'][str(climb['buttress_id'])]['name']
+
+                # Sometimes there is no buttress data
+                buttress_id_str = str(climb['buttress_id'])
+                if buttress_id_str in crag['buttress_data']:
+                    c['buttress'] = crag['buttress_data'][buttress_id_str]['name']
 
                 c['desc'] = (bs(climb['desc'], 'lxml').get_text()
                              .removeprefix('Rockfax Description')
@@ -189,11 +215,10 @@ class Scraper:
                 c['symbols'] = ', '.join([crag['climb_symbols'][str(s)]['name'] for s in climb['symbols']
                                           if str(s) in crag['climb_symbols']])
 
-                buttress_meta = crag['buttress_data'][str(climb['buttress_id'])]['meta']
-                if buttress_meta and 'approach_time' in buttress_meta:
-                    c['approach_time'] = crag['buttress_data'][str(climb['buttress_id'])]['meta']['approach_time']
-                else:
-                    c['approach_time'] = 0
+                c['approach_time'] = 0
+                if buttress_id_str in crag['buttress_data']:
+                    if 'approach_time' in crag['buttress_data'][buttress_id_str]['meta']:
+                        c['approach_time'] = crag['buttress_data'][buttress_id_str]['meta']['approach_time']
 
                 c['rocktype'] = crag['rocktype']
                 c['aspect'] = crag['aspect']
@@ -204,5 +229,3 @@ class Scraper:
         out_path = os.path.join(self.data_dir, out_file)
         df_climbs.to_csv(out_path, index=False)
         logging.info(f'CSV written to {out_path}')
-
-
