@@ -21,10 +21,10 @@ logger.setLevel(logging.INFO)
 @click.option('--area', '-a',
               default='dorset', show_default=True,
               type=click.Choice(GuidebookInfo.get_area_names()))
-@click.version_option(version=__version__, prog_name="Starchaser Scraper")
+@click.version_option(version=__version__, prog_name='Starchaser Scraper')
 def main(area):
     s = Scraper()
     crag_data = s.scrape_guidebook_and_contents(GuidebookInfo.get_url(area))
-    out_file = f"{area}.csv"
+    out_file = f'{area}.csv'
     s.write_climbs_csv(crag_data, out_file)
 

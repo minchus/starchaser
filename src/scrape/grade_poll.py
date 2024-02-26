@@ -27,9 +27,9 @@ def get_poll_grade(poll_data):
     poll_grade = list(poll_data.keys())[weighted_mean_index]
     grade_text = poll_grade.split(',')[-1]  # e.g. Mid 6a+
     grade_code_full = poll_grade.split(',')[0]  # e.g. 36easy
-    if "easy" in grade_code_full:
+    if 'easy' in grade_code_full:
         grade_modifier = 0.33
-    elif "hard" in grade_code_full:
+    elif 'hard' in grade_code_full:
         grade_modifier = 0.33
     else:
         grade_modifier = 0.00

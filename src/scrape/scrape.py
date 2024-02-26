@@ -21,7 +21,7 @@ from scrape.grade_poll import get_poll_grade
 
 
 logger = logging.getLogger(__name__)
-warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
+warnings.filterwarnings('ignore', category=MarkupResemblesLocatorWarning)
 
 
 class CachedLimiterSession(CacheMixin, LimiterMixin, Session):
@@ -34,7 +34,7 @@ def get_base_url(url):
 
 
 class Scraper:
-    def __init__(self, data_dir="data"):
+    def __init__(self, data_dir='data'):
         self.data_dir = data_dir
         Path(self.data_dir).mkdir(parents=True, exist_ok=True)
 
@@ -83,11 +83,12 @@ class Scraper:
                     climb['poll_grade_text'] = poll_grade_text
 
                     if poll_grade_code in grade_dict:
-                        climb['poll_diff'] = guidebook_grade_score - (grade_dict[poll_grade_code]['score'] + score_modifier)
+                        climb['poll_diff'] = \
+                            guidebook_grade_score - (grade_dict[poll_grade_code]['score'] + score_modifier)
                     else:
                         climb['poll_diff'] = -0.01
                 else:
-                    climb['poll_grade_text'] = "Bad poll data"
+                    climb['poll_grade_text'] = 'Bad poll data'
                     climb['poll_diff'] = -0.01
 
         return crag_list
@@ -100,7 +101,7 @@ class Scraper:
         df_scraped_tables = pd.read_html(StringIO(response.text), extract_links='all')
 
         # El-chorro guidebook has an initial table that we're not interested in
-        if 'chorro' in guidebook_url:
+        if 'chorro' in guidebook_url or 'kalymnos' in guidebook_url:
             df_scraped_tables = df_scraped_tables[1:]
 
         df_crags = pd.DataFrame(np.vstack(df_scraped_tables), columns=df_scraped_tables[0].columns)
@@ -228,5 +229,3 @@ class Scraper:
         out_path = os.path.join(self.data_dir, out_file)
         df_climbs.to_csv(out_path, index=False)
         logging.info(f'CSV written to {out_path}')
-
-
