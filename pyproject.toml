@@ -25,11 +25,11 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "altair",
-  "numpy",
-  "pandas",
-  "streamlit",
-  "st-gsheets-connection"
+  "altair==5.3.0",
+  "numpy==1.21.4",
+  "pandas==1.5.3",
+  "streamlit==1.36.0",
+  "st-gsheets-connection==0.0.4"
 ]
 
 [project.urls]
@@ -44,6 +44,7 @@ scrape = "scrape.cli:main"
 path = "src/starchaser/__about__.py"
 
 [tool.hatch.envs.default]
+python = "3.9"
 dependencies = [
   "coverage[toml]>=6.5",
   "pytest",
