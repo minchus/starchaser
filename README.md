@@ -1,14 +1,14 @@
 # starchaser
- Reach for the stars
+Scrape and aggregate UKC logbook data and display in Streamlit.
 
 ## View the dashboard
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://<your-custom-subdomain>.streamlit.app)
+[Reach for the stars!](https://starchaser.minchus.com)
 
 ## Development
 ### Environment setup
 Prerequisites:
- - system python > 3.8
  - hatch
+ - python > 3.8 (will be installed by hatch)
 
 ### Run local Streamlit dashboard
 The local Streamlit app will read secrets from a file .streamlit/secrets.toml in the repo's root directory.
@@ -25,7 +25,7 @@ Then run:
 ### Run scrape
 ```hatch run scrape```
 
-By default data directory for the request cache and output CSV is `./data/`
+By default, the data directory for the request cache and output CSV is `./data/`
 which will be created if it does not exist.
 
 ### Run tests
