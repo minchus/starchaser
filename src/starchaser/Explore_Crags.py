@@ -10,7 +10,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from starchaser.utils import get_climb_data, get_logbook_data, GuidebookInfo, poll_grade_sort_key
 
 st.set_page_config(
-    page_title='Starchaser - Reach for the stars',
+    page_title='Starchaser',
     page_icon='⭐',
     layout='wide',
     initial_sidebar_state='expanded'
@@ -20,15 +20,19 @@ st.set_page_config(
 # https://discuss.streamlit.io/t/tool-tips-in-fullscreen-mode-for-charts/6800/9
 st.markdown('<style>#vg-tooltip-element{z-index: 1000051}</style>', unsafe_allow_html=True)
 
+st.title('Starchaser')
+st.markdown('For the climber obsessed with chasing stars or grades, this page will help you pick a destination.')
+
 st.header('Instructions', divider='gray')
 st.markdown('''
-Use the filters on the left to filter by grade or focus on particular crags.
+Pick an area or crag using the filters on the left. You can also filter by grade (range) or star rating.
 
 #### Upload your UKC logbook file (optional)
 You can upload your UKC logbook to exclude climbs that you have already done.
 
 First, download your logbook file from your account on the UKC website.
 Go to Logbooks - "My Logbook". Click "Download" above the list of climbs and select DLOG format.
+
 Next, select this file using the box on the left.
 You can then include or exclude climbs you have done using the checkbox on the left.
 ''')
@@ -44,8 +48,6 @@ with st.sidebar:
     
     # Options
     ''', unsafe_allow_html=True)
-
-    logbook_file = st.file_uploader('Upload UKC logbook (DLOG format)')
 
     area = st.selectbox(
         'Select area',
@@ -83,6 +85,9 @@ with st.sidebar:
     if st.checkbox('⭐⭐⭐', value=True):
         selected_stars.append(3)
 
+    logbook_file = st.file_uploader('Upload UKC logbook (DLOG format)')
+
+
 df = df.loc[
     (df['crag'].isin(selected_crags)) &
     (df['grade'] >= min_grade) &
@@ -116,9 +121,8 @@ with st.sidebar:
 st.markdown('''
 This chart helps you pick a crag by showing which crag has the most climbs at each grade.
 
-:point_down: Hover over the leftmost bar to see which crag has the most climbs for each grade.
-The bars get smaller from left to right.
-##
+For each grade, the bars are sorted with the biggest on the left.
+Hover over the leftmost bar to see which crag has the most climbs for each grade. :point_down: 
 ''')
 
 c = alt.Chart(
